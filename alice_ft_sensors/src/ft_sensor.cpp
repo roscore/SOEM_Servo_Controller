@@ -265,13 +265,13 @@ void GetSensorValue(double new_data[6], uint8_t *data)
 
 
   force_torque_data[0] = (float32)(data[0] | data[1] << 16);
-  force_torque_data[1] = (float32)(data[1] | data[2] << 8);
-  force_torque_data[2] = (float32)(data[2] | data[3] << 8);
+  force_torque_data[1] = (float32)(data[1] | data[2] << 16);
+  force_torque_data[2] = (float32)(data[2] | data[3] << 16);
 
   // Raw_Tx, Raw_Ty, Raw_Tz (2 Bytes * 3)
-  force_torque_data[3] = (float32)(data[3] | data[4] << 8);
-  force_torque_data[4] = (float32)(data[4] | data[5] << 8);
-  force_torque_data[5] = (float32)(data[5] | data[6] << 8);
+  force_torque_data[3] = (float32)(data[3] | data[4] << 16);
+  force_torque_data[4] = (float32)(data[4] | data[5] << 16);
+  force_torque_data[5] = (float32)(data[5] | data[6] << 16);
 
   double force_divider = 50;
   double torque_divider = 2000;
