@@ -27,16 +27,15 @@ using namespace boost::filesystem;
 using namespace boost::lambda;
 
 const int storage_size = 500;
-double data_storage[2][6][storage_size];
-double data_offset[2][6];
+double data_storage[1][6][storage_size];
+double data_offset[1][6];
 
 char IOmap[4096];
 boolean needlf;
 std_msgs::Bool ft_init_done;
 uint8 currentgroup = 0;
-int alice_id_int = 0;
 
-void WriteLog(std::ofstream &log_file, double data[2][6]);
+void WriteLog(std::ofstream &log_file, double data[1][6]);
 void SendCommand(uint8_t *data, uint16_t *buf, int buf_length);
 void PrintValues_2(uint8_t *data);
 void PrintValues_3(uint8_t *data);
@@ -54,18 +53,12 @@ void InitCallback(const std_msgs::Bool msg)
   {
     ft_init_done.data = FALSE;
     InitFT(1);
-    InitFT(2);
     ft_init_done.data = TRUE;
   }
 }
 
 int main(int argc, char *argv[])
 {
-  char *id_var_;
-
-  id_var_ = std::getenv("ALICE_NUM");
-
-  alice_id_int = atoi(id_var_);
   std::string lan_port_name_;
   lan_port_name_ = "eno1";
   int n = lan_port_name_.length();
@@ -77,14 +70,7 @@ int main(int argc, char *argv[])
   std::cout << "[FT Sensor] lan port name :" << ifname << std::endl;
 
   std::string ss_user_name;
-  if (alice_id_int ==3)
-  {
-    ss_user_name = "alice3-nuc";
-  }
-  else   
-  {
-    ss_user_name = "alice3-nuc";
-  }
+  ss_user_name = "heroehs";
  
   string file_string = "/home/"+ss_user_name+"/log_ft/";
 
@@ -103,7 +89,7 @@ int main(int argc, char *argv[])
 
   log_file.open(file_location);
 
-  double data_sum[2][6];
+  double data_sum[1][6];
 
   for (int i = 0; i < 6; i++)
   {
@@ -120,9 +106,9 @@ int main(int argc, char *argv[])
 
   ros::init(argc, argv, "ft_node");
   ros::NodeHandle nh;
-  ros::Subscriber sub_init = nh.subscribe("/alice/ft_init", 1, InitCallback);
-  ros::Publisher ec_data = nh.advertise<alice_ft_sensor_msgs::ForceTorque>("/alice/force_torque_data", 1);
-  ros::Publisher init_done = nh.advertise<std_msgs::Bool>("/alice/ft_init_done", 1);
+  ros::Subscriber sub_init = nh.subscribe("/ft_init", 1, InitCallback);
+  ros::Publisher ec_data = nh.advertise<alice_ft_sensor_msgs::ForceTorque>("/force_torque_data", 1);
+  ros::Publisher init_done = nh.advertise<std_msgs::Bool>("/ft_init_done", 1);
 
   alice_ft_sensor_msgs::ForceTorque ft_msg;
 
@@ -157,7 +143,6 @@ int main(int argc, char *argv[])
         if (!needlf)
         {
           SetupFT(1);
-          SetupFT(2);
           needlf = TRUE;
         }
 
@@ -165,7 +150,7 @@ int main(int argc, char *argv[])
         ec_send_processdata();
         ec_receive_processdata(EC_TIMEOUTRET);
 
-        double data[2][6];
+        double data[1][6];
         for (int n = 0; n < ec_slavecount; n++)
         {
           //PrintValues_2(ec_slave[n+1].inputs);
@@ -190,7 +175,7 @@ int main(int argc, char *argv[])
         static double log_timer = GetMillis();
         static int count = 0;
         count++;
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 1; i++)
           for (int j = 0; j < 6; j++)
             data_sum[i][j] += data[i][j];
 
@@ -199,7 +184,7 @@ int main(int argc, char *argv[])
         {
           pub_timer += 0.008f;
 
-          for (int i = 0; i < 2; i++)
+          for (int i = 0; i < 1; i++)
           {
             for (int j = 0; j < 6; j++)
             {
@@ -254,7 +239,7 @@ int main(int argc, char *argv[])
   }
 }
 
-void WriteLog(std::ofstream &log_file, double data[2][6])
+void WriteLog(std::ofstream &log_file, double data[1][6])
 {
   log_file << fixed << setprecision(3) << setw(10) << GetMillis() << " |"
            << setw(10) << data[0][0] << ", " << setw(10) << data[0][1] << ", " << setw(10) << data[0][2] << " |"
@@ -278,8 +263,8 @@ void GetSensorValue(double new_data[6], uint8_t *data)
 {
   int16_t force_torque_data[6];
 
-  if (alice_id_int == 3)
-  {
+  //if (alice_id_int == 3)
+  //{
     // Raw_Fx, Raw_Fy, Raw_Fy (2 Bytes * 3)
     force_torque_data[0] = (int16_t)(data[16] | data[17] << 8);
     force_torque_data[1] = (int16_t)(data[18] | data[19] << 8);
@@ -289,19 +274,19 @@ void GetSensorValue(double new_data[6], uint8_t *data)
     force_torque_data[3] = (int16_t)(data[22] | data[23] << 8);
     force_torque_data[4] = (int16_t)(data[24] | data[25] << 8);
     force_torque_data[5] = (int16_t)(data[26] | data[27] << 8);
-  }
-  else
-  {
+  //}
+  //else
+  //{
     // Raw_Fx, Raw_Fy, Raw_Fy (2 Bytes * 3)
-    force_torque_data[0] = (int16_t)(data[24] | data[25] << 8);
-    force_torque_data[1] = (int16_t)(data[26] | data[27] << 8);
-    force_torque_data[2] = (int16_t)(data[28] | data[29] << 8);
+    //force_torque_data[0] = (int16_t)(data[24] | data[25] << 8);
+    //force_torque_data[1] = (int16_t)(data[26] | data[27] << 8);
+    //force_torque_data[2] = (int16_t)(data[28] | data[29] << 8);
 
     // Raw_Tx, Raw_Ty, Raw_Tz (2 Bytes * 3)
-    force_torque_data[3] = (int16_t)(data[30] | data[31] << 8);
-    force_torque_data[4] = (int16_t)(data[32] | data[33] << 8);
-    force_torque_data[5] = (int16_t)(data[34] | data[35] << 8);
-  }
+    //force_torque_data[3] = (int16_t)(data[30] | data[31] << 8);
+    //force_torque_data[4] = (int16_t)(data[32] | data[33] << 8);
+    //force_torque_data[5] = (int16_t)(data[34] | data[35] << 8);
+  //}
   double force_divider = 50;
   double torque_divider = 2000;
 
