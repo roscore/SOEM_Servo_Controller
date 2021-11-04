@@ -261,32 +261,18 @@ void SendCommand(uint8_t *data, uint16_t *buf, int buf_length)
 
 void GetSensorValue(double new_data[6], uint8_t *data)
 {
-  int16_t force_torque_data[6];
+  float32 force_torque_data[6];
 
-  //if (alice_id_int == 3)
-  //{
-    // Raw_Fx, Raw_Fy, Raw_Fy (2 Bytes * 3)
-    force_torque_data[0] = (int16_t)(data[16] | data[17] << 8);
-    force_torque_data[1] = (int16_t)(data[18] | data[19] << 8);
-    force_torque_data[2] = (int16_t)(data[20] | data[21] << 8);
 
-    // Raw_Tx, Raw_Ty, Raw_Tz (2 Bytes * 3)
-    force_torque_data[3] = (int16_t)(data[22] | data[23] << 8);
-    force_torque_data[4] = (int16_t)(data[24] | data[25] << 8);
-    force_torque_data[5] = (int16_t)(data[26] | data[27] << 8);
-  //}
-  //else
-  //{
-    // Raw_Fx, Raw_Fy, Raw_Fy (2 Bytes * 3)
-    //force_torque_data[0] = (int16_t)(data[24] | data[25] << 8);
-    //force_torque_data[1] = (int16_t)(data[26] | data[27] << 8);
-    //force_torque_data[2] = (int16_t)(data[28] | data[29] << 8);
+  force_torque_data[0] = (float32)(data[0] | data[1] << 16);
+  force_torque_data[1] = (float32)(data[1] | data[2] << 8);
+  force_torque_data[2] = (float32)(data[2] | data[3] << 8);
 
-    // Raw_Tx, Raw_Ty, Raw_Tz (2 Bytes * 3)
-    //force_torque_data[3] = (int16_t)(data[30] | data[31] << 8);
-    //force_torque_data[4] = (int16_t)(data[32] | data[33] << 8);
-    //force_torque_data[5] = (int16_t)(data[34] | data[35] << 8);
-  //}
+  // Raw_Tx, Raw_Ty, Raw_Tz (2 Bytes * 3)
+  force_torque_data[3] = (float32)(data[3] | data[4] << 8);
+  force_torque_data[4] = (float32)(data[4] | data[5] << 8);
+  force_torque_data[5] = (float32)(data[5] | data[6] << 8);
+
   double force_divider = 50;
   double torque_divider = 2000;
 
