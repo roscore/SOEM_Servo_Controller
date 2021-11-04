@@ -264,17 +264,17 @@ void GetSensorValue(double new_data[6], uint8_t *data)
   float32 force_torque_data[6];
 
 
-  force_torque_data[0] = (float32)(data[0] | data[1] << 16);
-  force_torque_data[1] = (float32)(data[1] | data[2] << 16);
-  force_torque_data[2] = (float32)(data[2] | data[3] << 16);
+  force_torque_data[0] = (float32)(data[0] | data[1] << 8);
+  force_torque_data[1] = (float32)(data[1] | data[2] << 8);
+  force_torque_data[2] = (float32)(data[2] | data[3] << 8);
 
   // Raw_Tx, Raw_Ty, Raw_Tz (2 Bytes * 3)
-  force_torque_data[3] = (float32)(data[3] | data[4] << 16);
-  force_torque_data[4] = (float32)(data[4] | data[5] << 16);
-  force_torque_data[5] = (float32)(data[5] | data[6] << 16);
+  force_torque_data[3] = (float32)(data[3] | data[4] << 8);
+  force_torque_data[4] = (float32)(data[4] | data[5] << 8);
+  force_torque_data[5] = (float32)(data[5] | data[6] << 8);
 
-  double force_divider = 50;
-  double torque_divider = 2000;
+  double force_divider = 1;
+  double torque_divider = 1;
 
   for (int i = 0; i < 3; i++)
   {
@@ -299,12 +299,12 @@ void SetRosMsg(alice_ft_sensor_msgs::ForceTorque *ft_msg, double data[][6])
   ft_msg->torque_x_raw_l = data[0][3];
   ft_msg->torque_y_raw_l = data[0][4];
   ft_msg->torque_z_raw_l = data[0][5];
-  ft_msg->force_x_raw_r = data[1][0];
-  ft_msg->force_y_raw_r = data[1][1];
-  ft_msg->force_z_raw_r = data[1][2];
-  ft_msg->torque_x_raw_r = data[1][3];
-  ft_msg->torque_y_raw_r = data[1][4];
-  ft_msg->torque_z_raw_r = data[1][5];
+  ft_msg->force_x_raw_r = 0;
+  ft_msg->force_y_raw_r = 0;
+  ft_msg->force_z_raw_r = 0;
+  ft_msg->torque_x_raw_r = 0;
+  ft_msg->torque_y_raw_r = 0;
+  ft_msg->torque_z_raw_r = 0;
 }
 
 double Kalman(double *input, double *data, int length)
