@@ -1,2 +1,0 @@
-alice_ft_sensor_msgs/FlagData flag_l
-alice_ft_sensor_msgs/FlagData flag_r

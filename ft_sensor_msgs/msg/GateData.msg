@@ -1,0 +1,2 @@
+ft_sensor_msgs/FlagData flag_l
+ft_sensor_msgs/FlagData flag_r

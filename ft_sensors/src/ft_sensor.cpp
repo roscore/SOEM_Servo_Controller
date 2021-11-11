@@ -14,7 +14,7 @@
 #include <std_msgs/Bool.h>
 #include <bits/stdc++.h>
 
-#include "alice_ft_sensor_msgs/ForceTorque.h"
+#include "ft_sensor_msgs/ForceTorque.h"
 #include "ethercat.h"
 
 #include "get_time.h"
@@ -35,12 +35,12 @@ boolean needlf;
 std_msgs::Bool ft_init_done;
 uint8 currentgroup = 0;
 
-void WriteLog(std::ofstream &log_file, double data[1][6]);
+void WriteLog(std::ofstream &log_file, float32 data[1][6]);
 void SendCommand(uint8_t *data, uint16_t *buf, int buf_length);
 void PrintValues_2(uint8_t *data);
 void PrintValues_3(uint8_t *data);
-void GetSensorValue(double new_data[6], uint8_t *data);
-void SetRosMsg(alice_ft_sensor_msgs::ForceTorque *ft_msg, double data[][6]);
+void GetSensorValue(float32 new_data[6], uint8_t *data);
+void SetRosMsg(ft_sensor_msgs::ForceTorque *ft_msg, float32 data[][6]);
 double Kalman(double *input, double *data, int length);
 OSAL_THREAD_FUNC ec_check(void *ptr);
 void SetupFT(int addr);
@@ -60,7 +60,7 @@ void InitCallback(const std_msgs::Bool msg)
 int main(int argc, char *argv[])
 {
   std::string lan_port_name_;
-  lan_port_name_ = "eno1";
+  lan_port_name_ = "enp2s0";
   int n = lan_port_name_.length();
 
   char ifname[n + 1];
@@ -96,10 +96,10 @@ int main(int argc, char *argv[])
     for (int j = 0; j < storage_size; j++)
     {
       data_storage[0][i][j] = 0;
-      data_storage[1][i][j] = 0;
+      // data_storage[1][i][j] = 0;
     }
     data_sum[0][i] = 0;
-    data_sum[1][i] = 0;
+    // data_sum[1][i] = 0;
   }
 
   needlf = FALSE;
@@ -107,10 +107,10 @@ int main(int argc, char *argv[])
   ros::init(argc, argv, "ft_node");
   ros::NodeHandle nh;
   ros::Subscriber sub_init = nh.subscribe("/ft_init", 1, InitCallback);
-  ros::Publisher ec_data = nh.advertise<alice_ft_sensor_msgs::ForceTorque>("/force_torque_data", 1);
+  ros::Publisher ec_data = nh.advertise<ft_sensor_msgs::ForceTorque>("/force_torque_data", 1);
   ros::Publisher init_done = nh.advertise<std_msgs::Bool>("/ft_init_done", 1);
 
-  alice_ft_sensor_msgs::ForceTorque ft_msg;
+  ft_sensor_msgs::ForceTorque ft_msg;
 
   if (ec_init(ifname))
   {
@@ -150,17 +150,17 @@ int main(int argc, char *argv[])
         ec_send_processdata();
         ec_receive_processdata(EC_TIMEOUTRET);
 
-        double data[1][6];
+        float data[1][6];
         for (int n = 0; n < ec_slavecount; n++)
         {
           //PrintValues_2(ec_slave[n+1].inputs);
           GetSensorValue(data[n], ec_slave[n + 1].inputs);
-
-          for (int i = 0; i < 6; i++)
-          {
-            Kalman(data[n] + i, data_storage[n][i], storage_size);
-            data[n][i] -= data_offset[n][i];
-          }
+          //PrintValues_3(ec_slave[n + 1].inputs);
+          // for (int i = 0; i < 6; i++)
+          // {
+          //   Kalman(data[n] + i, data_storage[n][i], storage_size);
+          //   data[n][i] -= data_offset[n][i];
+          // }
 
           /*
              printf("\n");
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
   }
 }
 
-void WriteLog(std::ofstream &log_file, double data[1][6])
+void WriteLog(std::ofstream &log_file, float32 data[1][6])
 {
   log_file << fixed << setprecision(3) << setw(10) << GetMillis() << " |"
            << setw(10) << data[0][0] << ", " << setw(10) << data[0][1] << ", " << setw(10) << data[0][2] << " |"
@@ -259,28 +259,16 @@ void SendCommand(uint8_t *data, uint16_t *buf, int buf_length)
   ec_send_processdata();
 }
 
-void GetSensorValue(double new_data[6], uint8_t *data)
+void GetSensorValue(float32 new_data[6], uint8_t *data)
 {
-  float32 force_torque_data[6];
+  memcpy(new_data, ec_slave[1].inputs, 24);
 
-
-  force_torque_data[0] = (float32)(data[0] | data[1] << 8);
-  force_torque_data[1] = (float32)(data[1] | data[2] << 8);
-  force_torque_data[2] = (float32)(data[2] | data[3] << 8);
-
-  // Raw_Tx, Raw_Ty, Raw_Tz (2 Bytes * 3)
-  force_torque_data[3] = (float32)(data[3] | data[4] << 8);
-  force_torque_data[4] = (float32)(data[4] | data[5] << 8);
-  force_torque_data[5] = (float32)(data[5] | data[6] << 8);
-
-  double force_divider = 1;
-  double torque_divider = 1;
-
-  for (int i = 0; i < 3; i++)
-  {
-    new_data[i] = (double)force_torque_data[i] / force_divider;
-    new_data[i + 3] = (double)force_torque_data[i + 3] / torque_divider;
-  }
+  // printf("fx : %f\n", force_torque_data[0]);
+  // printf("fy : %f\n", force_torque_data[1]);
+  // printf("fz : %f\n", force_torque_data[2]);
+  // printf("tx : %f\n", force_torque_data[3]);
+  // printf("tx : %f\n", force_torque_data[4]);
+  // printf("tx : %f\n", force_torque_data[5]);
 
   /*
      printf("\n");
@@ -291,20 +279,14 @@ void GetSensorValue(double new_data[6], uint8_t *data)
    */
 }
 
-void SetRosMsg(alice_ft_sensor_msgs::ForceTorque *ft_msg, double data[][6])
+void SetRosMsg(ft_sensor_msgs::ForceTorque *ft_msg, float32 data[][6])
 {
-  ft_msg->force_x_raw_l = data[0][0];
-  ft_msg->force_y_raw_l = data[0][1];
-  ft_msg->force_z_raw_l = data[0][2];
-  ft_msg->torque_x_raw_l = data[0][3];
-  ft_msg->torque_y_raw_l = data[0][4];
-  ft_msg->torque_z_raw_l = data[0][5];
-  ft_msg->force_x_raw_r = 0;
-  ft_msg->force_y_raw_r = 0;
-  ft_msg->force_z_raw_r = 0;
-  ft_msg->torque_x_raw_r = 0;
-  ft_msg->torque_y_raw_r = 0;
-  ft_msg->torque_z_raw_r = 0;
+  ft_msg->force_x_raw = data[0][0];
+  ft_msg->force_y_raw = data[0][1];
+  ft_msg->force_z_raw = data[0][2];
+  ft_msg->torque_x_raw = data[0][3];
+  ft_msg->torque_y_raw = data[0][4];
+  ft_msg->torque_z_raw = data[0][5];
 }
 
 double Kalman(double *input, double *data, int length)
@@ -398,8 +380,8 @@ void PrintValues_2(uint8_t *data)
 
 void PrintValues_3(uint8_t *data)
 {
-  uint8_t df_data[16];
-  for (int i = 0; i < 16; i++)
+  uint8_t df_data[50];
+  for (int i = 0; i < 50; i++)
     df_data[i] = *data++;
 
   int16_t raw_force[3];
@@ -437,17 +419,67 @@ void PrintValues_3(uint8_t *data)
     ft[i + 3] = (double)raw_torque[i] / 1000.0;
   }
 
-  printf("DF_data_1~16 : ");
-  for (int i = 0; i < 16; i++)
-    printf("%3d ", df_data[i]);
+  //printf("DF_data_1~50 : ");
+  system("clear");
+  printf("\r data %d : %3d", 0, df_data[0]);
+  printf("\n data %d : %3d", 1, df_data[1]);
+  printf("\n data %d : %3d", 2, df_data[2]);
+  printf("\n data %d : %3d", 3, df_data[3]);
+  printf("\n data %d : %3d", 4, df_data[4]);
+  printf("\n data %d : %3d", 5, df_data[5]);
+  printf("\n data %d : %3d", 6, df_data[6]);
+  printf("\n data %d : %3d", 7, df_data[7]);
+  printf("\n data %d : %3d", 8, df_data[8]);
+  printf("\n data %d : %3d", 9, df_data[9]);
+  printf("\n data %d : %3d", 10, df_data[10]);
+  printf("\n data %d : %3d", 11, df_data[11]);
+  printf("\n data %d : %3d", 12, df_data[12]);
+  printf("\n data %d : %3d", 13, df_data[13]);
+  printf("\n data %d : %3d", 14, df_data[14]);
+  printf("\n data %d : %3d", 15, df_data[15]);
+  printf("\n data %d : %3d", 16, df_data[16]);
+  printf("\n data %d : %3d", 17, df_data[17]);
+  printf("\n data %d : %3d", 18, df_data[18]);
+  printf("\n data %d : %3d", 19, df_data[19]);
+  printf("\n data %d : %3d", 20, df_data[20]);
+  printf("\n data %d : %3d", 21, df_data[21]);
+  printf("\n data %d : %3d", 22, df_data[22]);
+  printf("\n data %d : %3d", 23, df_data[23]);
+  printf("\n data %d : %3d", 24, df_data[24]);
+  printf("\n data %d : %3d", 25, df_data[25]);
+  printf("\n data %d : %3d", 26, df_data[26]);
+  printf("\n data %d : %3d", 27, df_data[27]);
+  printf("\n data %d : %3d", 28, df_data[28]);
+  printf("\n data %d : %3d", 29, df_data[29]);
+  printf("\n data %d : %3d", 30, df_data[30]);
+  printf("\n data %d : %3d", 31, df_data[31]);
+  printf("\n data %d : %3d", 32, df_data[32]);
+  printf("\n data %d : %3d", 33, df_data[33]);
+  printf("\n data %d : %3d", 34, df_data[34]);
+  printf("\n data %d : %3d", 35, df_data[35]);
+  printf("\n data %d : %3d", 36, df_data[36]);
+  printf("\n data %d : %3d", 37, df_data[37]);
+  printf("\n data %d : %3d", 38, df_data[38]);
+  printf("\n data %d : %3d", 39, df_data[39]);
+  printf("\n data %d : %3d", 40, df_data[40]);
+  printf("\n data %d : %3d", 41, df_data[41]);
+  printf("\n data %d : %3d", 42, df_data[42]);
+  printf("\n data %d : %3d", 43, df_data[43]);
+  printf("\n data %d : %3d", 44, df_data[44]);
+  printf("\n data %d : %3d", 45, df_data[45]);
 
-  printf("\n");
-  printf("Raw_Force  : Fx= %4d, Fy= %4d, Fz= %4d \n", raw_force[0], raw_force[1], raw_force[2]);
-  printf("Raw_Torque : Tx= %4d, Ty= %4d, Tz= %4d \n", raw_torque[0], raw_torque[1], raw_torque[2]);
-  printf("Raw_Force  : Fx= %4f, Fy= %4f, Fz= %4f \n", ft[0], ft[1], ft[2]);
-  printf("Raw_Torque : Tx= %4f, Ty= %4f, Tz= %4f \n", ft[3], ft[4], ft[5]);
-  printf("OverloadStatus : %2d \n", overload_status);
-  printf("ErrorFlag  : %2d \n\n\n", error_flag);
+  for (int i = 0; i < 16; i++)
+  {
+    //    printf(" %3d ", df_data[i]);
+  }
+      
+  // printf("\n");
+  // printf("Raw_Force  : Fx= %4d, Fy= %4d, Fz= %4d \n", raw_force[0], raw_force[1], raw_force[2]);
+  // printf("Raw_Torque : Tx= %4d, Ty= %4d, Tz= %4d \n", raw_torque[0], raw_torque[1], raw_torque[2]);
+  // printf("Raw_Force  : Fx= %4f, Fy= %4f, Fz= %4f \n", ft[0], ft[1], ft[2]);
+  // printf("Raw_Torque : Tx= %4f, Ty= %4f, Tz= %4f \n", ft[3], ft[4], ft[5]);
+  // printf("OverloadStatus : %2d \n", overload_status);
+  // printf("ErrorFlag  : %2d \n\n\n", error_flag);
 }
 
 void SetupFT(int addr)
@@ -460,14 +492,14 @@ void SetupFT(int addr)
   buf[1] = 0x00;
   buf[2] = 0x00;
   buf[3] = 0x0C;
-  SendCommand(ec_slave[addr].outputs, buf, buf_size);
+  //SendCommand(ec_slave[addr].outputs, buf, buf_size);
 
   //set cutoff frequency to 150Hz
   buf[0] = 0x00;
   buf[1] = 0x04;
   buf[2] = 0x01;
   buf[3] = 0x08;
-  SendCommand(ec_slave[addr].outputs, buf, buf_size);
+  //SendCommand(ec_slave[addr].outputs, buf, buf_size);
   //ec_receive_processdata(EC_TIMEOUTRET);
 
   //start command
@@ -475,7 +507,7 @@ void SetupFT(int addr)
   buf[1] = 0x00;
   buf[2] = 0x00;
   buf[3] = 0x0B;
-  SendCommand(ec_slave[addr].outputs, buf, buf_size);
+  //SendCommand(ec_slave[addr].outputs, buf, buf_size);
 
   InitFT(addr);
 }
@@ -487,7 +519,7 @@ void InitFT(int addr)
     data_offset[addr - 1][j] = 0;
   }
 
-  double data[6];
+  float data[6];
   for (int i = 0; i < storage_size; i++)
   {
     ec_send_processdata();

@@ -1,20 +1,20 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(alice_ft_sensors)
+project(ft_sensors)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
-  alice_ft_sensor_msgs
+  ft_sensor_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES alice_ft_sensors
+  LIBRARIES ft_sensors
   CATKIN_DEPENDS roscpp std_msgs
   DEPENDS system_lib
 )
 
-set(SOEM_INCLUDE_INSTALL_DIR include/alice_ft_sensors)
+set(SOEM_INCLUDE_INSTALL_DIR include/ft_sensors)
 
 set(OS "linux")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror")
