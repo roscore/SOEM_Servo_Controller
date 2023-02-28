@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="servo_controller" type="servo_controller" name="heroehs_linear_motor_controller" output="screen">
+    </node>
+</launch>

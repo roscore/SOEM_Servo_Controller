@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ft_sensors)
+project(servo_controller)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   ft_sensor_msgs
+  sor
 )
 
 catkin_package(
@@ -14,7 +15,7 @@ catkin_package(
   DEPENDS system_lib
 )
 
-set(SOEM_INCLUDE_INSTALL_DIR include/ft_sensors)
+set(SOEM_INCLUDE_INSTALL_DIR include/servo_controller)
 
 set(OS "linux")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror")
@@ -60,8 +61,14 @@ target_link_libraries(soem pthread rt)
 #  DESTINATION ${SOEM_INCLUDE_INSTALL_DIR}
 #)
 
-add_executable(ft_node src/ft_sensor.cpp src/get_time.cpp)
-add_dependencies(ft_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(ft_node ${catkin_LIBRARIES} soem)
+#add_executable(servo_controller src/servo_controller.cpp src/get_time.cpp)
+#add_executable(servo_controller src/servo_controller_torque.cpp src/get_time.cpp)
+add_executable(servo_controller src/servo_controller_demo.cpp src/get_time.cpp)
+
+#add_executable(servo_controller src/servo_controller_motion.cpp src/get_time.cpp)
+#add_executable(servo_controller src/servo_controller_safety_ver.cpp src/get_time.cpp)
+
+add_dependencies(servo_controller ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(servo_controller ${catkin_LIBRARIES} soem)
 
 
