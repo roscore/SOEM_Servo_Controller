@@ -14,19 +14,19 @@
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Float64MultiArray.h>
-#include <sor/output.h>
+#include <sensor_msgs/Joy.h>
+
 #include <bits/stdc++.h>
 
 #include "ft_sensor_msgs/ForceTorque.h"
 #include "sensor_msgs/Joy.h"
 #include "ethercat.h"
 #include "get_time.h"
-
 #include "pdo_def.h"
 #include "servo_def.h"
 
 #define EC_TIMEOUTMON 2000
-#define NUMOFSERVO_DRIVE 6
+#define NUMOFSERVO_DRIVE 2
 
 //#define _WRITE_MODEOP_SDO TRUE
 
@@ -52,6 +52,8 @@ using namespace boost::filesystem;
 using namespace boost::lambda;
 
 double torque_command[24] = {0,0,0,0,0,0};
+double goal_pos[2] = {0, 0};
+int play_count = 0;
 
 const int storage_size = 500;
 
@@ -200,7 +202,7 @@ void Homing(void)
 boolean ecat_init(void)
 {
   std::string lan_port_name_;
-  lan_port_name_ = "enp2s0";
+  lan_port_name_ = "eno1";
   int n = lan_port_name_.length();
 
   char ecat_ifname[n + 1];
@@ -334,48 +336,65 @@ boolean ecat_init(void)
   return inOP;
 }
 
-void TorqueCommandCallback(const sor::output::ConstPtr& msg)
+void TorqueCommandCallback(const std_msgs::Float64MultiArray::ConstPtr& msg)
 {
-  torque_command[0] = round(msg->motor1 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[1] = round(msg->motor2 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[2] = round(msg->motor3 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[3] = round(msg->motor4 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[4] = round(msg->motor5 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[5] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
+  torque_command[0] = round(msg->data.at(0) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[1] = round(msg->data.at(1) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[2] = round(msg->data.at(2) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[3] = round(msg->data.at(3) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[4] = round(msg->data.at(4) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[5] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
 
-  torque_command[6] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[7] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[8] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[9] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[10] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[11] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
+  torque_command[6] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[7] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[8] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[9] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[10] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[11] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
 
-  torque_command[12] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[13] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[14] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[15] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[16] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[17] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
+  torque_command[12] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[13] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[14] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[15] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[16] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[17] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
 
-  torque_command[18] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[19] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[20] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[21] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[22] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
-  torque_command[23] = round(msg->motor6 / 75559 * 1000 * 1000 / 4.86);
+  torque_command[18] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[19] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[20] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[21] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[22] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
+  torque_command[23] = round(msg->data.at(5) / 75559 * 1000 * 1000 / 4.86);
 }
 
 void JoyCallback(const sensor_msgs::Joy::ConstPtr& msg)
 {
-    ROS_INFO_STREAM("Up  : "    << msg->buttons[1]);
-    ROS_INFO_STREAM("Down  : "  << msg->buttons[2]);
+  if(msg->buttons[3] == true && msg->buttons[0] == false && msg->buttons[1] == false)
+  {
+    ROS_INFO_STREAM("set the base mode");
+    play_count = 4;
+  }
+  else if(msg->buttons[1] == true && msg->buttons[3] == false && msg->buttons[0] == false)
+  {
+    ROS_INFO_STREAM("set the script mode");
+    play_count = 1;
+  }
+  else if(msg->buttons[0] == true && msg->buttons[1] == false && msg->buttons[3] == false)
+  {
+    ROS_INFO_STREAM("set the controller mode");
+    play_count = 3;
+  }
+  
+  goal_pos[1] = 340000 + (msg->axes[1] * -330000);
+  goal_pos[0] = 260000 + (msg->axes[4] * -250000);
+
 }
 
 int main(int argc, char *argv[])
 {
 
   std::string lan_port_name_;
-  lan_port_name_ = "enp2s0";
+  lan_port_name_ = "eno1";
   int n = lan_port_name_.length();
 
   char ecat_ifname[n + 1];
@@ -433,9 +452,11 @@ int main(int argc, char *argv[])
     else                    printf("%d Moter Status is wrong!!! \n", iter+1);
   }
 
-  if(check_param_result == NUMOFSERVO_DRIVE)  check_param = true; 
+  // if(check_param_result == NUMOFSERVO_DRIVE)  check_param = true; 
 
-  if(check_param == true) homing_flag = true;
+  // if(check_param == true) homing_flag = true;
+
+  homing_flag = false;
 
   if(homing_flag == true)
   {
@@ -453,8 +474,10 @@ int main(int argc, char *argv[])
     run_flag = true;  
   }
 
+  run_flag = true;
+  init_flag = true;
 
-  int play_count = 0;
+  play_count = 0;
   int count = 0;
   linear_actuator_length.data.clear();
     
@@ -496,6 +519,153 @@ int main(int argc, char *argv[])
           ec_SDOwrite(iter+1, 0x6040,0x00,FALSE,os, &op_cmd,EC_TIMEOUTRXM); //change slave operation mode
           printf("set OP mod");
 
+          os=sizeof(profile_velocity); profile_velocity = 0x7D0;	// pre state
+          ec_SDOwrite(iter+1, 0x6081,0x00,FALSE,os, &profile_velocity,EC_TIMEOUTRXM); //change slave operation mode
+          printf("profile veloicty: %d\n", profile_velocity);
+
+          os=sizeof(target_position);
+          if((iter+1 == 1) || (iter+1 == 6) || (iter+1 == 7) || (iter+1 == 12) || (iter+1 == 13) || (iter+1 == 18) || (iter+1 == 19) || (iter+1 == 24))
+          {
+            target_position = 50000;
+          }
+          else if((iter+1 == 2) || (iter+1 == 5) || (iter+1 == 8) || (iter+1 == 11) || (iter+1 == 14) || (iter+1 == 17) || (iter+1 == 20) || (iter+1 == 23))
+          {
+            target_position = 50000;
+          }
+          else if((iter+1 == 3) || (iter+1 == 4) || (iter+1 == 9) || (iter+1 == 10) || (iter+1 == 15) || (iter+1 == 16) || (iter+1 == 21) || (iter+1 == 22))
+          {
+            target_position = 80086;
+          }
+
+          ec_SDOwrite(iter+1, 0x607A,0x00, FALSE, os, &target_position, EC_TIMEOUTRXM); //read status of driver
+          printf("Target Position(write) of driver: %d\n", target_position);
+
+          os=sizeof(op_cmd); op_cmd = 0x3f;	// pre state
+          ec_SDOwrite(iter+1, 0x6040,0x00,FALSE,os, &op_cmd,EC_TIMEOUTRXM); //change slave operation mode
+          printf("set PP mod");
+
+          os=sizeof(target_position_read); target_position_read = 0x00;
+          ec_SDOread(iter+1, 0x607A,0x00, FALSE, &os, &target_position_read, EC_TIMEOUTRXM); //read status of driver
+          printf("Target Position(read) of driver: %d\n", target_position_read);
+
+          os=sizeof(actual_position); actual_position = 0x00;
+          ec_SDOread(iter+1, 0x6064,0x00, FALSE, &os, &actual_position, EC_TIMEOUTRXM); //read status of driver
+          printf("Actual Position of driver: %d\n", actual_position);
+
+          os=sizeof(demand_position); demand_position = 0x00;
+          ec_SDOread(iter+1, 0x6062,0x00, FALSE, &os, &demand_position, EC_TIMEOUTRXM); //read status of driver
+          printf("Demand Position of driver: %d\n", demand_position);
+
+          ROS_INFO("moving to target position");
+        }
+        else if(play_count == 2)
+        {
+          os=sizeof(mode_of_driver); mode_of_driver = 0x00;
+          ec_SDOread(iter+1, 0x6041,0x00, FALSE, &os, &mode_of_driver, EC_TIMEOUTRXM); //read status of driver
+          printf("Mode of driver: %d\n", mode_of_driver);
+
+          os=sizeof(op_cmd); op_cmd = 0x0f;	//Enable
+          ec_SDOwrite(iter+1, 0x6040,0x00,FALSE,os, &op_cmd,EC_TIMEOUTRXM); //change slave operation mode
+          printf("set OP mod");
+
+          os=sizeof(profile_velocity); profile_velocity = 0x7D0;	// pre state
+          ec_SDOwrite(iter+1, 0x6081,0x00,FALSE,os, &profile_velocity,EC_TIMEOUTRXM); //change slave operation mode
+          printf("profile veloicty: %d\n", profile_velocity);
+
+          os=sizeof(target_position);
+          if((iter+1 == 1) || (iter+1 == 6) || (iter+1 == 7) || (iter+1 == 12) || (iter+1 == 13) || (iter+1 == 18) || (iter+1 == 19) || (iter+1 == 24))
+          {
+            target_position = 500000;
+          }
+          else if((iter+1 == 2) || (iter+1 == 5) || (iter+1 == 8) || (iter+1 == 11) || (iter+1 == 14) || (iter+1 == 17) || (iter+1 == 20) || (iter+1 == 23))
+          {
+            target_position = 500000;
+          }
+          else if((iter+1 == 3) || (iter+1 == 4) || (iter+1 == 9) || (iter+1 == 10) || (iter+1 == 15) || (iter+1 == 16) || (iter+1 == 21) || (iter+1 == 22))
+          {
+            target_position = 80086;
+          }
+
+          ec_SDOwrite(iter+1, 0x607A,0x00, FALSE, os, &target_position, EC_TIMEOUTRXM); //read status of driver
+          printf("Target Position(write) of driver: %d\n", target_position);
+
+          os=sizeof(op_cmd); op_cmd = 0x3f;	// pre state
+          ec_SDOwrite(iter+1, 0x6040,0x00,FALSE,os, &op_cmd,EC_TIMEOUTRXM); //change slave operation mode
+          printf("set PP mod");
+
+          os=sizeof(target_position_read); target_position_read = 0x00;
+          ec_SDOread(iter+1, 0x607A,0x00, FALSE, &os, &target_position_read, EC_TIMEOUTRXM); //read status of driver
+          printf("Target Position(read) of driver: %d\n", target_position_read);
+
+          os=sizeof(actual_position); actual_position = 0x00;
+          ec_SDOread(iter+1, 0x6064,0x00, FALSE, &os, &actual_position, EC_TIMEOUTRXM); //read status of driver
+          printf("Actual Position of driver: %d\n", actual_position);
+
+          os=sizeof(demand_position); demand_position = 0x00;
+          ec_SDOread(iter+1, 0x6062,0x00, FALSE, &os, &demand_position, EC_TIMEOUTRXM); //read status of driver
+          printf("Demand Position of driver: %d\n", demand_position);
+
+          ROS_INFO("moving to target position");
+        }
+        else if(play_count == 3)
+        {
+          os=sizeof(mode_of_driver); mode_of_driver = 0x00;
+          ec_SDOread(iter+1, 0x6041,0x00, FALSE, &os, &mode_of_driver, EC_TIMEOUTRXM); //read status of driver
+          printf("Mode of driver: %d\n", mode_of_driver);
+
+          os=sizeof(op_cmd); op_cmd = 0x0f;	//Enable
+          ec_SDOwrite(iter+1, 0x6040,0x00,FALSE,os, &op_cmd,EC_TIMEOUTRXM); //change slave operation mode
+          printf("set OP mod");
+
+          os=sizeof(profile_velocity); profile_velocity = 0x3E8;	// pre state
+          ec_SDOwrite(iter+1, 0x6081,0x00,FALSE,os, &profile_velocity,EC_TIMEOUTRXM); //change slave operation mode
+          printf("profile veloicty: %d\n", profile_velocity);
+
+          os=sizeof(target_position);
+          if((iter+1 == 1) || (iter+1 == 6) || (iter+1 == 7) || (iter+1 == 12) || (iter+1 == 13) || (iter+1 == 18) || (iter+1 == 19) || (iter+1 == 24))
+          {
+            target_position = goal_pos[0];
+          }
+          else if((iter+1 == 2) || (iter+1 == 5) || (iter+1 == 8) || (iter+1 == 11) || (iter+1 == 14) || (iter+1 == 17) || (iter+1 == 20) || (iter+1 == 23))
+          {
+            target_position = goal_pos[1];
+          }
+          else if((iter+1 == 3) || (iter+1 == 4) || (iter+1 == 9) || (iter+1 == 10) || (iter+1 == 15) || (iter+1 == 16) || (iter+1 == 21) || (iter+1 == 22))
+          {
+            target_position = 80086;
+          }
+
+          ec_SDOwrite(iter+1, 0x607A,0x00, FALSE, os, &target_position, EC_TIMEOUTRXM); //read status of driver
+          printf("Target Position(write) of driver: %d\n", target_position);
+
+          os=sizeof(op_cmd); op_cmd = 0x3f;	// pre state
+          ec_SDOwrite(iter+1, 0x6040,0x00,FALSE,os, &op_cmd,EC_TIMEOUTRXM); //change slave operation mode
+          printf("set PP mod");
+
+          os=sizeof(target_position_read); target_position_read = 0x00;
+          ec_SDOread(iter+1, 0x607A,0x00, FALSE, &os, &target_position_read, EC_TIMEOUTRXM); //read status of driver
+          printf("Target Position(read) of driver: %d\n", target_position_read);
+
+          os=sizeof(actual_position); actual_position = 0x00;
+          ec_SDOread(iter+1, 0x6064,0x00, FALSE, &os, &actual_position, EC_TIMEOUTRXM); //read status of driver
+          printf("Actual Position of driver: %d\n", actual_position);
+
+          os=sizeof(demand_position); demand_position = 0x00;
+          ec_SDOread(iter+1, 0x6062,0x00, FALSE, &os, &demand_position, EC_TIMEOUTRXM); //read status of driver
+          printf("Demand Position of driver: %d\n", demand_position);
+
+          ROS_INFO("moving to target position");
+        }
+        else if(play_count == 4)
+        {
+          os=sizeof(mode_of_driver); mode_of_driver = 0x00;
+          ec_SDOread(iter+1, 0x6041,0x00, FALSE, &os, &mode_of_driver, EC_TIMEOUTRXM); //read status of driver
+          printf("Mode of driver: %d\n", mode_of_driver);
+
+          os=sizeof(op_cmd); op_cmd = 0x0f;	//Enable
+          ec_SDOwrite(iter+1, 0x6040,0x00,FALSE,os, &op_cmd,EC_TIMEOUTRXM); //change slave operation mode
+          printf("set OP mod");
+
           os=sizeof(profile_velocity); profile_velocity = 0x1f4;	// pre state
           ec_SDOwrite(iter+1, 0x6081,0x00,FALSE,os, &profile_velocity,EC_TIMEOUTRXM); //change slave operation mode
           printf("profile veloicty: %d\n", profile_velocity);
@@ -503,11 +673,11 @@ int main(int argc, char *argv[])
           os=sizeof(target_position);
           if((iter+1 == 1) || (iter+1 == 6) || (iter+1 == 7) || (iter+1 == 12) || (iter+1 == 13) || (iter+1 == 18) || (iter+1 == 19) || (iter+1 == 24))
           {
-            target_position = 60491;
+            target_position = 200000;
           }
           else if((iter+1 == 2) || (iter+1 == 5) || (iter+1 == 8) || (iter+1 == 11) || (iter+1 == 14) || (iter+1 == 17) || (iter+1 == 20) || (iter+1 == 23))
           {
-            target_position = 58028;
+            target_position = 200000;
           }
           else if((iter+1 == 3) || (iter+1 == 4) || (iter+1 == 9) || (iter+1 == 10) || (iter+1 == 15) || (iter+1 == 16) || (iter+1 == 21) || (iter+1 == 22))
           {
@@ -585,20 +755,34 @@ int main(int argc, char *argv[])
       linear_actuator_length_pub.publish(linear_actuator_length);
       linear_actuator_length.data.clear();
 
-      if(play_count == 1)
+      if(play_count == 0)
       {
-        ROS_INFO("start torque control mode");
-        ros::Duration(10.00).sleep();
+        ROS_INFO_STREAM("start Position control mode");
+        ros::Duration(3.00).sleep();
+
+        play_count = 4;
       }
-      /*else if(play_count == 2)
+      else if(play_count == 1)
       {
-        ROS_WARN("Change OP Mode in 10 seconds");
-        ros::Duration(10.00).sleep();
-      }*/
-
-      play_count++;
-      
-
+        ROS_WARN("moving ...");
+        ros::Duration(1.00).sleep();
+        play_count = 2;
+      }
+      else if(play_count == 2)
+      {
+        ROS_WARN("moving ...");
+        ros::Duration(1.00).sleep();
+        play_count = 1;
+      }
+      else if(play_count == 3)
+      {
+        //test
+      }
+      else if(play_count == 4)
+      {
+        ROS_WARN("Start Base Mode in 5 seconds");
+        ros::Duration(5.00).sleep();
+      }
     }
     ros::spinOnce();
     //usleep(1000);
